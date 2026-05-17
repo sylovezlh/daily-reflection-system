@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日反思 · Daily Reflection</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Quattrocento+Sans:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #161410;
+    --bg-card: #1f1c18;
+    --bg-card-alt: #221e1a;
+    --text-primary: #e0d6c5;
+    --text-secondary: #a09888;
+    --text-muted: #6b6458;
+    --accent-amber: #c8873a;
+    --accent-gold: #d4a04a;
+    --accent-glow: #e8b86d;
+    --accent-rose: #b55a4a;
+    --accent-rose-glow: #c87060;
+    --border-warm: #2e2922;
+    --border-accent: #3d3325;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Quattrocento Sans', 'PingFang SC', 'Noto Sans SC', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed;
+    top: -40%; left: -20%; width: 80%; height: 80%;
+    background: radial-gradient(ellipse at center, rgba(200,135,58,0.04) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  body::after {
+    content: ''; position: fixed;
+    bottom: -30%; right: -15%; width: 70%; height: 70%;
+    background: radial-gradient(ellipse at center, rgba(200,135,58,0.03) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .noise {
+    position: fixed; inset: 0; opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+    pointer-events: none; z-index: 1;
+  }
+
+  .container {
+    position: relative; z-index: 2;
+    width: 100%; max-width: 900px;
+    padding: 48px 28px 80px;
+  }
+
+  /* ===== HEADER ===== */
+  .header { text-align: center; margin-bottom: 40px; position: relative; }
+  .header-decoration {
+    display: block; margin: 0 auto 20px;
+    width: 40px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-amber), transparent);
+  }
+  .date-navigator {
+    display: flex; align-items: center; justify-content: center;
+    gap: 24px; margin-bottom: 8px;
+  }
+  .date-nav-btn {
+    background: none; border: 1px solid var(--border-warm);
+    color: var(--text-secondary);
+    width: 40px; height: 40px; border-radius: 50%;
+    cursor: pointer; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s ease; font-family: inherit;
+  }
+  .date-nav-btn:hover {
+    border-color: var(--accent-amber); color: var(--accent-gold);
+    box-shadow: 0 0 20px rgba(200,135,58,0.15);
+  }
+
+  .date-display-wrap {
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    padding: 6px 14px;
+    border-radius: 10px;
+    transition: background 0.2s ease;
+  }
+  .date-display-wrap:hover { background: rgba(200,135,58,0.06); }
+  .date-display {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 2rem; font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.04em; line-height: 1.2;
+    text-align: center; min-width: 200px;
+  }
+  .date-display .weekday {
+    display: block; font-size: 0.85rem; font-weight: 400;
+    color: var(--accent-amber); letter-spacing: 0.12em;
+    margin-bottom: 4px;
+  }
+  .date-dropdown-hint {
+    font-size: 0.65rem; color: var(--text-muted);
+    letter-spacing: 0.06em; opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .date-display-wrap:hover .date-dropdown-hint { opacity: 0.6; }
+
+  .header-divider {
+    display: flex; align-items: center; justify-content: center;
+    gap: 16px; margin-top: 12px;
+  }
+  .header-divider .line {
+    width: 60px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-accent), transparent);
+  }
+  .today-indicator {
+    display: inline-block; padding: 4px 14px;
+    border: 1px solid var(--accent-amber); border-radius: 100px;
+    font-size: 0.7rem; color: var(--accent-amber);
+    letter-spacing: 0.1em; margin-top: 10px;
+    opacity: 0; transition: opacity 0.5s ease;
+  }
+  .today-indicator.visible { opacity: 1; }
+
+  /* ===== DATE PICKER ===== */
+  .date-picker-overlay {
+    position: fixed; inset: 0; z-index: 60; display: none;
+  }
+  .date-picker-overlay.open { display: block; }
+
+  .date-picker-popover {
+    position: absolute;
+    background: #1e1b16;
+    border: 1px solid var(--border-accent);
+    border-radius: 16px;
+    padding: 18px;
+    z-index: 70;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    width: 300px;
+    opacity: 0; transform: translateY(8px);
+    transition: all 0.2s ease;
+    pointer-events: none;
+  }
+  .date-picker-popover.visible {
+    opacity: 1; transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .dp-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .dp-month-label {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 1rem; font-weight: 600;
+    color: var(--text-primary);
+  }
+  .dp-nav {
+    background: none; border: 1px solid var(--border-warm);
+    color: var(--text-secondary);
+    width: 30px; height: 30px; border-radius: 50%;
+    cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease; font-family: inherit;
+  }
+  .dp-nav:hover { border-color: var(--accent-amber); color: var(--accent-gold); }
+
+  .dp-weekdays {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    text-align: center; margin-bottom: 6px;
+  }
+  .dp-weekday {
+    font-size: 0.7rem; color: var(--text-muted);
+    padding: 4px 0; letter-spacing: 0.04em;
+  }
+  .dp-weekday.weekend { color: rgba(181,90,74,0.5); }
+
+  .dp-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .dp-day {
+    aspect-ratio: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: inherit; font-size: 0.82rem;
+    transition: all 0.15s ease;
+    position: relative;
+  }
+  .dp-day:hover {
+    background: rgba(200,135,58,0.1);
+    border-color: rgba(200,135,58,0.2);
+    color: var(--text-primary);
+  }
+  .dp-day.other-month { color: var(--text-muted); opacity: 0.35; }
+  .dp-day.today {
+    color: var(--accent-amber);
+    font-weight: 700;
+    border-color: rgba(200,135,58,0.3);
+  }
+  .dp-day.selected {
+    background: rgba(200,135,58,0.15);
+    border-color: var(--accent-amber);
+    color: var(--accent-gold);
+  }
+  .dp-day .has-data-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--accent-amber);
+    position: absolute; bottom: 4px;
+    opacity: 0.7;
+  }
+  .dp-footer {
+    text-align: center; margin-top: 10px;
+  }
+  .dp-today-btn {
+    background: rgba(200,135,58,0.1);
+    border: 1px solid rgba(200,135,58,0.2);
+    color: var(--accent-amber);
+    border-radius: 100px;
+    padding: 5px 16px;
+    font-size: 0.75rem; cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+  }
+  .dp-today-btn:hover {
+    background: rgba(200,135,58,0.2);
+    border-color: var(--accent-amber);
+  }
+
+  /* ===== GRID & CARDS ===== */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 20px; align-items: start;
+  }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-warm);
+    border-radius: 12px; padding: 22px;
+    position: relative;
+    transition: all 0.4s ease;
+    opacity: 0; transform: translateY(24px);
+    animation: cardEnter 0.7s ease forwards;
+    backdrop-filter: blur(8px);
+  }
+  .card:hover { border-color: var(--border-accent); background: var(--bg-card-alt); }
+  .card:focus-within {
+    border-color: var(--accent-amber);
+    box-shadow: 0 0 0 1px rgba(200,135,58,0.15), 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .card:nth-child(1) { animation-delay: 0.1s; }
+  .card:nth-child(2) { animation-delay: 0.2s; }
+  .card:nth-child(3) { animation-delay: 0.3s; }
+  .card:nth-child(4) { animation-delay: 0.15s; }
+  .card:nth-child(5) { animation-delay: 0.35s; }
+  @keyframes cardEnter { to { opacity: 1; transform: translateY(0); } }
+
+  .card-actions   { grid-column: 1 / 3; }
+  .card-problems  { grid-column: 3; }
+  .card-skills    { grid-column: 1; }
+  .card-highlight { grid-column: 2 / 4; }
+  .card-regrets   { grid-column: 1 / 4; }
+
+  .card-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+  }
+  .card-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .card-icon.amber { background: rgba(200,135,58,0.12); color: var(--accent-amber); }
+  .card-icon.rose  { background: rgba(181,90,74,0.12); color: var(--accent-rose); }
+  .card-icon.gold  { background: rgba(212,160,74,0.15); color: var(--accent-gold); }
+  .card-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 1.05rem; font-weight: 600;
+    color: var(--text-primary); letter-spacing: 0.03em;
+  }
+  .card-subtitle { font-size: 0.72rem; color: var(--text-muted); letter-spacing: 0.06em; }
+
+  .card-highlight {
+    background: linear-gradient(135deg, #231f18 0%, #1f1c17 50%, #231f1a 100%);
+    border-color: var(--border-accent); overflow: hidden;
+  }
+  .card-highlight::before {
+    content: ''; position: absolute;
+    top: -1px; left: 20px; right: 20px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-amber), transparent);
+    opacity: 0.6;
+  }
+  .card-highlight::after {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(212,160,74,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .card-highlight .card-icon { background: rgba(212,160,74,0.18); }
+
+  .card-regrets {
+    background: linear-gradient(135deg, #1f1c19 0%, #1d1a18 100%);
+    border-color: rgba(181,90,74,0.15);
+  }
+  .card-regrets:hover { border-color: rgba(181,90,74,0.25); }
+  .card-regrets:focus-within {
+    border-color: var(--accent-rose);
+    box-shadow: 0 0 0 1px rgba(181,90,74,0.12), 0 8px 32px rgba(0,0,0,0.3);
+  }
+
+  /* ===== LIST ITEMS ===== */
+  .item-list { display: flex; flex-direction: column; gap: 6px; }
+  .item-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 5px 0;
+    animation: itemEnter 0.3s ease;
+  }
+  @keyframes itemEnter {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .item-number {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.85rem; font-weight: 600;
+    color: var(--text-muted);
+    min-width: 20px; padding-top: 7px;
+    user-select: none;
+  }
+
+  /* Time range chip */
+  .time-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 5px 10px;
+    background: rgba(200,135,58,0.06);
+    border: 1px solid rgba(200,135,58,0.15);
+    border-radius: 100px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: inherit; font-size: 0.76rem;
+    transition: all 0.25s ease;
+    white-space: nowrap; flex-shrink: 0;
+    margin-top: 2px;
+    user-select: none;
+  }
+  .time-chip:hover {
+    background: rgba(200,135,58,0.14);
+    border-color: var(--accent-amber);
+    color: var(--accent-gold);
+  }
+  .time-chip.has-time {
+    background: rgba(200,135,58,0.12);
+    border-color: rgba(200,135,58,0.3);
+    color: var(--accent-gold);
+  }
+  .time-chip .chip-arrow { font-size: 0.5rem; opacity: 0.4; margin-left: 1px; }
+
+  .item-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--text-primary);
+    font-family: inherit; font-size: 0.9rem; line-height: 1.6;
+    padding: 6px 0; caret-color: var(--accent-amber);
+  }
+  .item-input::placeholder { color: var(--text-muted); font-style: italic; opacity: 0.5; }
+
+  .item-delete {
+    background: none; border: none;
+    color: var(--text-muted); cursor: pointer;
+    font-size: 1rem; padding: 4px 6px; margin-top: 4px;
+    opacity: 0; transition: all 0.2s ease;
+    border-radius: 4px; line-height: 1;
+  }
+  .item-row:hover .item-delete { opacity: 0.5; }
+  .item-delete:hover { opacity: 1 !important; color: var(--accent-rose); background: rgba(181,90,74,0.1); }
+
+  .add-item-hint {
+    display: flex; align-items: center; gap: 8px;
+    padding: 2px 0 0 28px;
+    color: var(--text-muted); font-size: 0.78rem;
+    cursor: pointer; opacity: 0;
+    transition: opacity 0.3s ease; font-style: italic;
+  }
+  .card:hover .add-item-hint,
+  .card:focus-within .add-item-hint { opacity: 0.5; }
+  .add-item-hint:hover { opacity: 0.8 !important; color: var(--accent-amber); }
+  .add-item-hint .plus-icon {
+    width: 18px; height: 18px;
+    border: 1px dashed var(--text-muted);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+  }
+  .item-list-empty {
+    text-align: center; padding: 14px 0;
+    color: var(--text-muted); font-size: 0.82rem;
+    font-style: italic; opacity: 0.5; cursor: pointer;
+  }
+
+  /* ===== TIME PICKER (RANGE) ===== */
+  .time-picker-overlay { position: fixed; inset: 0; z-index: 80; display: none; }
+  .time-picker-overlay.open { display: block; }
+
+  .time-picker-popover {
+    position: absolute;
+    background: #1e1b16;
+    border: 1px solid var(--border-accent);
+    border-radius: 14px;
+    padding: 14px;
+    z-index: 90;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    min-width: 260px;
+    opacity: 0; transform: translateY(6px);
+    transition: all 0.2s ease;
+    pointer-events: none;
+  }
+  .time-picker-popover.visible {
+    opacity: 1; transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .tp-range-fields {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px;
+  }
+  .tp-field {
+    flex: 1;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .tp-field-label {
+    font-size: 0.7rem; color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+  .tp-field input[type="time"] {
+    width: 100%;
+    background: rgba(200,135,58,0.06);
+    border: 1px solid rgba(200,135,58,0.15);
+    border-radius: 8px;
+    color: var(--text-primary);
+    padding: 8px 10px;
+    font-family: inherit; font-size: 0.88rem;
+    outline: none;
+    color-scheme: dark;
+  }
+  .tp-field input[type="time"]:focus { border-color: var(--accent-amber); }
+  .tp-range-sep {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    padding-top: 18px;
+  }
+
+  .tp-presets-label {
+    font-size: 0.7rem; color: var(--text-muted);
+    letter-spacing: 0.05em; margin-bottom: 6px;
+  }
+  .time-presets {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 5px; margin-bottom: 10px;
+  }
+  .time-preset {
+    display: flex; align-items: center; gap: 4px;
+    padding: 7px 8px;
+    background: rgba(200,135,58,0.05);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: inherit; font-size: 0.76rem;
+    transition: all 0.2s ease;
+    text-align: left;
+  }
+  .time-preset:hover {
+    background: rgba(200,135,58,0.12);
+    border-color: rgba(200,135,58,0.25);
+    color: var(--accent-gold);
+  }
+  .time-preset .preset-icon { font-size: 0.8rem; }
+  .time-preset .preset-dur  { font-size: 0.65rem; color: var(--text-muted); margin-left: auto; }
+
+  .tp-actions {
+    display: flex; gap: 6px; margin-top: 4px;
+  }
+  .tp-apply-btn {
+    flex: 1;
+    background: rgba(200,135,58,0.15);
+    border: 1px solid rgba(200,135,58,0.25);
+    border-radius: 8px;
+    color: var(--accent-gold);
+    cursor: pointer; font-size: 0.78rem;
+    padding: 7px 0; font-family: inherit;
+    transition: all 0.2s ease;
+  }
+  .tp-apply-btn:hover { background: rgba(200,135,58,0.25); }
+  .tp-clear-btn {
+    background: none; border: 1px solid rgba(181,90,74,0.15);
+    border-radius: 8px;
+    color: var(--text-muted); cursor: pointer;
+    font-size: 0.72rem; padding: 7px 14px; font-family: inherit;
+    transition: all 0.2s ease;
+  }
+  .tp-clear-btn:hover {
+    border-color: var(--accent-rose);
+    color: var(--accent-rose);
+  }
+
+  /* ===== SYNC INDICATOR ===== */
+  .sync-dot {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    margin-left: 4px; vertical-align: middle;
+    transition: all 0.3s ease;
+  }
+  .sync-dot.online  { background: #5a8a6a; box-shadow: 0 0 6px rgba(90,138,106,0.4); }
+  .sync-dot.offline { background: #6b5648; }
+  .sync-dot.syncing { background: var(--accent-amber); animation: pulse 0.8s ease infinite; }
+
+  /* ===== AUTH OVERLAY ===== */
+  .auth-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(10, 9, 7, 0.88);
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .auth-overlay.hidden { display: none; }
+
+  .auth-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-warm);
+    border-radius: 16px;
+    padding: 36px 32px;
+    width: 380px; max-width: 90vw;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    animation: authEnter 0.5s ease;
+  }
+  @keyframes authEnter {
+    from { opacity: 0; transform: translateY(16px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .auth-card h2 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 1.3rem; font-weight: 700;
+    color: var(--text-primary);
+    text-align: center; margin-bottom: 6px;
+  }
+  .auth-subtitle {
+    text-align: center; font-size: 0.75rem;
+    color: var(--text-muted); margin-bottom: 24px;
+  }
+
+  .auth-tabs {
+    display: flex; gap: 0; margin-bottom: 24px;
+    border-bottom: 1px solid var(--border-warm);
+  }
+  .auth-tab {
+    flex: 1; text-align: center; padding: 10px 0;
+    background: none; border: none; cursor: pointer;
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.88rem; color: var(--text-muted);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease; margin-bottom: -1px;
+  }
+  .auth-tab.active {
+    color: var(--accent-gold);
+    border-bottom-color: var(--accent-amber);
+  }
+  .auth-tab:hover { color: var(--text-secondary); }
+
+  .auth-field {
+    margin-bottom: 14px;
+  }
+  .auth-field label {
+    display: block; font-size: 0.72rem;
+    color: var(--text-muted); margin-bottom: 4px;
+    letter-spacing: 0.04em;
+  }
+  .auth-field input {
+    width: 100%; padding: 10px 14px;
+    background: rgba(200,135,58,0.04);
+    border: 1px solid var(--border-warm);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-family: inherit; font-size: 0.9rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  .auth-field input:focus { border-color: var(--accent-amber); }
+  .auth-field input::placeholder { color: var(--text-muted); opacity: 0.5; }
+
+  .auth-error {
+    font-size: 0.75rem; color: var(--accent-rose);
+    text-align: center; margin-bottom: 12px;
+    min-height: 18px;
+  }
+
+  .auth-submit {
+    width: 100%; padding: 12px;
+    background: rgba(200,135,58,0.2);
+    border: 1px solid rgba(200,135,58,0.3);
+    border-radius: 10px;
+    color: var(--accent-gold);
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.95rem; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .auth-submit:hover { background: rgba(200,135,58,0.3); }
+  .auth-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* User badge in header */
+  .user-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 4px 12px 4px 14px;
+    border: 1px solid var(--border-warm);
+    border-radius: 100px;
+    font-size: 0.72rem; color: var(--text-secondary);
+    transition: all 0.2s ease;
+  }
+  .user-badge .user-icon { font-size: 0.8rem; }
+  .logout-btn {
+    background: none; border: none;
+    color: var(--text-muted); cursor: pointer;
+    font-size: 0.75rem; padding: 2px 4px;
+    font-family: inherit;
+    transition: color 0.2s ease;
+  }
+  .logout-btn:hover { color: var(--accent-rose); }
+
+  /* ===== PIE CHART PANEL ===== */
+  .pie-panel {
+    position: fixed; top: 24px; right: 24px;
+    z-index: 30;
+    background: var(--bg-card);
+    border: 1px solid var(--border-warm);
+    border-radius: 14px;
+    padding: 16px;
+    width: 210px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    opacity: 0; transform: translateX(12px);
+    transition: all 0.5s ease;
+    pointer-events: none;
+  }
+  .pie-panel.visible {
+    opacity: 1; transform: translateX(0);
+    pointer-events: auto;
+  }
+  .pie-panel-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.8rem; font-weight: 600;
+    color: var(--text-primary);
+    text-align: center; margin-bottom: 10px;
+    letter-spacing: 0.04em;
+  }
+  .pie-donut-wrap {
+    position: relative;
+    width: 120px; height: 120px;
+    margin: 0 auto 10px;
+  }
+  .pie-donut {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    position: relative;
+  }
+  .pie-donut-hole {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 62px; height: 62px;
+    border-radius: 50%;
+    background: #1a1712;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .pie-total-label {
+    font-size: 0.58rem; color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+  .pie-total-value {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.9rem; font-weight: 700;
+    color: var(--accent-gold);
+  }
+
+  .pie-legend {
+    display: flex; flex-direction: column; gap: 4px;
+    max-height: 150px; overflow-y: auto;
+  }
+  .pie-legend-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.7rem;
+  }
+  .pie-legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .pie-legend-text {
+    flex: 1; color: var(--text-secondary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pie-legend-pct {
+    color: var(--text-muted); font-size: 0.68rem;
+    white-space: nowrap;
+  }
+  .pie-empty {
+    text-align: center; font-size: 0.7rem;
+    color: var(--text-muted); font-style: italic;
+    padding: 10px 0;
+  }
+
+  /* ===== SAVE INDICATOR ===== */
+  .save-indicator {
+    position: fixed; bottom: 32px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--bg-card);
+    border: 1px solid var(--border-accent);
+    padding: 8px 20px; border-radius: 100px;
+    font-size: 0.78rem; color: var(--text-secondary);
+    opacity: 0; transition: all 0.4s ease;
+    pointer-events: none; z-index: 10;
+  }
+  .save-indicator.show {
+    opacity: 1; transform: translateX(-50%) translateY(0);
+  }
+  .save-indicator .dot-pulse {
+    display: inline-block;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent-amber);
+    margin-right: 8px;
+    animation: pulse 0.8s ease;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+  /* ===== SECTION DOTS ===== */
+  .section-dots {
+    display: flex; justify-content: center; gap: 12px;
+    margin-top: 40px;
+    opacity: 0;
+    animation: cardEnter 0.7s ease 0.5s forwards;
+  }
+  .section-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--border-accent); cursor: pointer;
+    transition: all 0.3s ease; position: relative;
+  }
+  .section-dot:hover { background: var(--accent-amber); box-shadow: 0 0 10px rgba(200,135,58,0.3); }
+  .section-dot.active { background: var(--accent-amber); box-shadow: 0 0 12px rgba(200,135,58,0.4); }
+  .section-dot-tooltip {
+    position: absolute; bottom: 18px; left: 50%;
+    transform: translateX(-50%); white-space: nowrap;
+    font-size: 0.7rem; color: var(--text-secondary);
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+  }
+  .section-dot:hover .section-dot-tooltip { opacity: 1; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-accent); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-warm); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 1100px) {
+    .pie-panel {
+      position: relative; top: auto; right: auto;
+      width: 100%; margin-bottom: 20px;
+      flex-direction: row; display: flex; align-items: center;
+      gap: 16px; padding: 14px;
+    }
+    .pie-donut-wrap { margin: 0; width: 100px; height: 100px; flex-shrink: 0; }
+    .pie-legend { max-height: none; }
+  }
+
+  @media (max-width: 700px) {
+    .container { padding: 24px 12px 60px; }
+    .grid { grid-template-columns: 1fr; gap: 14px; }
+    .card-actions, .card-problems, .card-skills, .card-highlight, .card-regrets {
+      grid-column: 1;
+    }
+    .date-display { font-size: 1.4rem; }
+    .card { padding: 16px; }
+    .item-row { gap: 5px; }
+    .time-chip { font-size: 0.7rem; padding: 4px 7px; }
+    .time-chip .chip-arrow { display: none; }
+    .pie-panel {
+      position: relative; top: auto; right: auto;
+      width: 100%; margin-bottom: 16px;
+    }
+    .date-picker-popover { width: 280px; left: 50% !important; transform: translateX(-50%) translateY(8px); }
+    .date-picker-popover.visible { transform: translateX(-50%) translateY(0); }
+  }
+
+  @media print {
+    body { background: white; color: #222; }
+    .noise, .pie-panel, .save-indicator, .section-dots, .date-nav-btn,
+    .time-picker-overlay, .date-picker-overlay, .add-item-hint, .item-delete { display: none !important; }
+    body::before, body::after { display: none; }
+    .card { background: white; border: 1px solid #ddd; break-inside: avoid; opacity:1; transform:none; animation:none; }
+    .item-input { color: #222; }
+    .time-chip { border: 1px solid #ccc; color: #555; }
+  }
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+
+<!-- Auth Overlay -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <h2>每日反思</h2>
+    <div class="auth-subtitle">记录每一天，成为更好的自己</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="login">登录</button>
+      <button class="auth-tab" data-tab="register">创建账号</button>
+    </div>
+    <div class="auth-field">
+      <label>用户名</label>
+      <input type="text" id="authUsername" placeholder="输入用户名" autocomplete="username">
+    </div>
+    <div class="auth-field">
+      <label>密码</label>
+      <input type="password" id="authPassword" placeholder="输入密码" autocomplete="current-password">
+    </div>
+    <div class="auth-error" id="authError"></div>
+    <button class="auth-submit" id="authSubmit">登录</button>
+  </div>
+</div>
+
+<!-- Pie Chart Panel -->
+<div class="pie-panel" id="piePanel">
+  <div class="pie-panel-title">今日时间分布</div>
+  <div class="pie-donut-wrap">
+    <div class="pie-donut" id="pieDonut"></div>
+    <div class="pie-donut-hole">
+      <span class="pie-total-label">总计</span>
+      <span class="pie-total-value" id="pieTotal">0h</span>
+    </div>
+  </div>
+  <div class="pie-legend" id="pieLegend"></div>
+</div>
+
+<div class="container">
+  <header class="header">
+    <span class="header-decoration"></span>
+    <div class="date-navigator">
+      <button class="date-nav-btn" id="prevDay" aria-label="前一天">←</button>
+      <div class="date-display-wrap" id="dateDisplayWrap">
+        <div class="date-display">
+          <span class="weekday" id="weekday">星期五</span>
+          <span id="dateStr">2026年5月16日</span>
+        </div>
+        <div class="date-dropdown-hint">点击选择日期</div>
+      </div>
+      <button class="date-nav-btn" id="nextDay" aria-label="后一天">→</button>
+    </div>
+    <div class="header-divider">
+      <span class="line"></span><span class="line"></span>
+    </div>
+    <div class="today-indicator visible" id="todayBadge">今天</div>
+    <span class="sync-dot offline" id="syncDot" title="同步状态"></span>
+    <span class="user-badge" id="userBadge" style="display:none">
+      <span class="user-icon">👤</span><span id="userNameDisplay"></span>
+      <button class="logout-btn" id="logoutBtn">退出</button>
+    </span>
+  </header>
+
+  <div class="grid" id="grid">
+    <!-- 1. 今天做的事情 -->
+    <div class="card card-actions" data-section="actions">
+      <div class="card-header">
+        <div class="card-icon amber">✧</div>
+        <div>
+          <div class="card-title">今日所做</div>
+          <div class="card-subtitle">今天完成的事情（设置时间段查看占比）</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="item-list" id="list-actions"></div>
+        <div class="add-item-hint" data-section="actions"><span class="plus-icon">+</span>点击添加</div>
+      </div>
+    </div>
+
+    <!-- 2. 处理的问题 -->
+    <div class="card card-problems" data-section="problems">
+      <div class="card-header">
+        <div class="card-icon amber">⚡</div>
+        <div>
+          <div class="card-title">处理的问题</div>
+          <div class="card-subtitle">遇到的困难与解决</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="item-list" id="list-problems"></div>
+        <div class="add-item-hint" data-section="problems"><span class="plus-icon">+</span>点击添加</div>
+      </div>
+    </div>
+
+    <!-- 3. 学习的技能 -->
+    <div class="card card-skills" data-section="skills">
+      <div class="card-header">
+        <div class="card-icon amber">☽</div>
+        <div>
+          <div class="card-title">学习的技能</div>
+          <div class="card-subtitle">新知识、新工具、新方法</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="item-list" id="list-skills"></div>
+        <div class="add-item-hint" data-section="skills"><span class="plus-icon">+</span>点击添加</div>
+      </div>
+    </div>
+
+    <!-- 4. 今日之最 -->
+    <div class="card card-highlight" data-section="highlight">
+      <div class="card-header">
+        <div class="card-icon gold">★</div>
+        <div>
+          <div class="card-title">今日之最</div>
+          <div class="card-subtitle">今天最重要、最有价值的一件事</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="item-list" id="list-highlight"></div>
+        <div class="add-item-hint" data-section="highlight"><span class="plus-icon">+</span>点击添加</div>
+      </div>
+    </div>
+
+    <!-- 5. 不该做的事 -->
+    <div class="card card-regrets" data-section="regrets">
+      <div class="card-header">
+        <div class="card-icon rose">☓</div>
+        <div>
+          <div class="card-title">不该做的事</div>
+          <div class="card-subtitle">值得反思和改进的地方</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="item-list" id="list-regrets"></div>
+        <div class="add-item-hint" data-section="regrets"><span class="plus-icon">+</span>点击添加</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="section-dots" id="sectionDots">
+    <div class="section-dot" data-target="actions"><span class="section-dot-tooltip">今日所做</span></div>
+    <div class="section-dot" data-target="problems"><span class="section-dot-tooltip">处理的问题</span></div>
+    <div class="section-dot" data-target="skills"><span class="section-dot-tooltip">学习的技能</span></div>
+    <div class="section-dot" data-target="highlight"><span class="section-dot-tooltip">今日之最</span></div>
+    <div class="section-dot" data-target="regrets"><span class="section-dot-tooltip">不该做的事</span></div>
+  </nav>
+</div>
+
+<!-- Date Picker Popover -->
+<div class="date-picker-overlay" id="datePickerOverlay">
+  <div class="date-picker-popover" id="datePickerPopover">
+    <div class="dp-header">
+      <button class="dp-nav" id="dpPrevMonth">←</button>
+      <span class="dp-month-label" id="dpMonthLabel">2026年5月</span>
+      <button class="dp-nav" id="dpNextMonth">→</button>
+    </div>
+    <div class="dp-weekdays">
+      <span class="dp-weekday">一</span><span class="dp-weekday">二</span><span class="dp-weekday">三</span>
+      <span class="dp-weekday">四</span><span class="dp-weekday">五</span>
+      <span class="dp-weekday weekend">六</span><span class="dp-weekday weekend">日</span>
+    </div>
+    <div class="dp-grid" id="dpGrid"></div>
+    <div class="dp-footer">
+      <button class="dp-today-btn" id="dpTodayBtn">回到今天</button>
+    </div>
+  </div>
+</div>
+
+<!-- Time Picker Popover -->
+<div class="time-picker-overlay" id="timePickerOverlay">
+  <div class="time-picker-popover" id="timePickerPopover">
+    <div class="tp-range-fields">
+      <div class="tp-field">
+        <span class="tp-field-label">开始时间</span>
+        <input type="time" id="timeStartInput" value="09:00">
+      </div>
+      <span class="tp-range-sep">—</span>
+      <div class="tp-field">
+        <span class="tp-field-label">结束时间</span>
+        <input type="time" id="timeEndInput" value="10:00">
+      </div>
+    </div>
+    <div class="tp-presets-label">快捷时段</div>
+    <div class="time-presets">
+      <button class="time-preset" data-start="06:00" data-end="08:00"><span class="preset-icon">🌅</span>早晨<span class="preset-dur">2h</span></button>
+      <button class="time-preset" data-start="08:00" data-end="12:00"><span class="preset-icon">☀️</span>上午<span class="preset-dur">4h</span></button>
+      <button class="time-preset" data-start="12:00" data-end="13:00"><span class="preset-icon">🌤</span>中午<span class="preset-dur">1h</span></button>
+      <button class="time-preset" data-start="13:00" data-end="18:00"><span class="preset-icon">🌥</span>下午<span class="preset-dur">5h</span></button>
+      <button class="time-preset" data-start="18:00" data-end="22:00"><span class="preset-icon">🌙</span>晚上<span class="preset-dur">4h</span></button>
+      <button class="time-preset" data-start="22:00" data-end="23:59"><span class="preset-icon">🌑</span>深夜<span class="preset-dur">2h</span></button>
+    </div>
+    <div class="tp-actions">
+      <button class="tp-apply-btn" id="tpApplyBtn">应用</button>
+      <button class="tp-clear-btn" id="tpClearBtn">清除</button>
+    </div>
+  </div>
+</div>
+
+<div class="save-indicator" id="saveIndicator"><span class="dot-pulse"></span>已保存</div>
+
+<script>
+(function() {
+  const STORAGE_PREFIX = 'daily_reflection_v3_';
+  const STORE_OLD_PREFIXES = ['daily_reflection_v2_', 'daily_reflection_'];
+  const sections = ['actions', 'problems', 'skills', 'highlight', 'regrets'];
+  const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+
+  // API detection
+  let API_BASE = '';
+  let apiAvailable = false;
+
+  async function detectAPI() {
+    // Try same-origin first (when served by Flask)
+    try {
+      const res = await fetch('/api/ping');
+      if (res.ok) { API_BASE = ''; apiAvailable = true; return; }
+    } catch(e) {}
+    // Try cross-origin (when opened from file://)
+    try {
+      const res = await fetch('http://localhost:5001/api/ping');
+      if (res.ok) { API_BASE = 'http://localhost:5001'; apiAvailable = true; return; }
+    } catch(e) {}
+    apiAvailable = false;
+  }
+
+  function setSyncStatus(status) {
+    const dot = document.getElementById('syncDot');
+    if (!dot) return;
+    dot.className = 'sync-dot ' + status;
+    dot.title = { online: '已连接服务器', offline: '离线模式 (本地存储)', syncing: '同步中...' }[status] || '';
+  }
+
+  // ── Auth ──
+  let authToken = localStorage.getItem('reflection_auth_token') || '';
+  let authUsername = localStorage.getItem('reflection_auth_username') || '';
+
+  async function apiFetch(url, opts = {}) {
+    const headers = { ...(opts.headers || {}) };
+    if (authToken && apiAvailable) {
+      headers['Authorization'] = 'Bearer ' + authToken;
+    }
+    if (opts.body && typeof opts.body === 'string') {
+      headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+    }
+    const res = await fetch(API_BASE + url, { ...opts, headers });
+    if (res.status === 401 && apiAvailable) {
+      // Token expired or invalid
+      clearAuth();
+      showAuthOverlay();
+      throw new Error('unauthorized');
+    }
+    return res;
+  }
+
+  function showAuthOverlay() {
+    document.getElementById('authOverlay').classList.remove('hidden');
+    document.getElementById('authUsername').value = '';
+    document.getElementById('authPassword').value = '';
+    document.getElementById('authError').textContent = '';
+    switchAuthTab('login');
+  }
+
+  function hideAuthOverlay() {
+    document.getElementById('authOverlay').classList.add('hidden');
+    document.getElementById('userBadge').style.display = 'inline-flex';
+    document.getElementById('userNameDisplay').textContent = authUsername;
+  }
+
+  function clearAuth() {
+    authToken = '';
+    authUsername = '';
+    localStorage.removeItem('reflection_auth_token');
+    localStorage.removeItem('reflection_auth_username');
+    document.getElementById('userBadge').style.display = 'none';
+  }
+
+  function switchAuthTab(tab) {
+    const isLogin = tab === 'login';
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.getElementById('authSubmit').textContent = isLogin ? '登录' : '创建账号';
+    document.getElementById('authError').textContent = '';
+  }
+
+  async function handleAuth() {
+    const isLogin = document.querySelector('.auth-tab.active').dataset.tab === 'login';
+    const username = document.getElementById('authUsername').value.trim();
+    const password = document.getElementById('authPassword').value.trim();
+    const errorEl = document.getElementById('authError');
+    const submitBtn = document.getElementById('authSubmit');
+
+    if (!username || !password) {
+      errorEl.textContent = '请填写用户名和密码';
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = '处理中...';
+    errorEl.textContent = '';
+
+    try {
+      const res = await fetch(API_BASE + '/api/auth/' + (isLogin ? 'login' : 'register'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        authToken = data.token;
+        authUsername = data.username;
+        localStorage.setItem('reflection_auth_token', authToken);
+        localStorage.setItem('reflection_auth_username', authUsername);
+        // Fetch role
+        try {
+          const meRes = await fetch(API_BASE + '/api/auth/me', { headers: {'Authorization': 'Bearer '+authToken} });
+          const meData = await meRes.json();
+          localStorage.setItem('reflection_auth_role', meData.role || 'user');
+        } catch(e) {}
+        hideAuthOverlay();
+        await loadData();
+        renderAllSections();
+      } else {
+        errorEl.textContent = data.error || '操作失败';
+      }
+    } catch (e) {
+      errorEl.textContent = '无法连接服务器';
+    }
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = isLogin ? '登录' : '创建账号';
+  }
+
+  // Auth event listeners
+  document.querySelectorAll('.auth-tab').forEach(tab => {
+    tab.addEventListener('click', () => switchAuthTab(tab.dataset.tab));
+  });
+
+  document.getElementById('authSubmit').addEventListener('click', handleAuth);
+
+  ['authUsername', 'authPassword'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleAuth();
+    });
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    if (apiAvailable && authToken) {
+      try { await apiFetch('/api/auth/logout', { method: 'POST' }); } catch(e) {}
+    }
+    clearAuth();
+    showAuthOverlay();
+    // Clear displayed data
+    sectionData = {};
+    sections.forEach(id => { sectionData[id] = []; });
+    renderAllSections();
+  });
+
+  const CHART_COLORS = [
+    '#c8873a', '#d4a04a', '#b5762e', '#e0b860',
+    '#a06828', '#c89850', '#8b5e24', '#dab070',
+    '#956a2c', '#bf8c42', '#7a5020', '#cc9d4e'
+  ];
+
+  // --- State ---
+  let currentDate = new Date();
+  const today = new Date(); today.setHours(0,0,0,0);
+  let sectionData = {};
+
+  // Picker states
+  let pickerTarget = null; // { sectionId, index }
+  let dpCalendarMonth = null; // Year+Month for date picker view
+
+  // --- Helpers ---
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => document.querySelectorAll(s);
+  const listEls = {};
+  sections.forEach(id => { listEls[id] = document.getElementById('list-' + id); });
+
+  function dateKey(d) {
+    const y = d.getFullYear(); const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  function formatDate(d) { return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`; }
+  function isToday(d) { return d.getTime() === today.getTime(); }
+  function sameDay(a, b) {
+    return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+  }
+
+  // --- Data layer ---
+  async function loadData() {
+    const date = dateKey(currentDate);
+    let stored = null;
+
+    // Try API first
+    if (apiAvailable && authToken) {
+      try {
+        const res = await apiFetch('/api/reflections?date=' + date);
+        if (res.ok) {
+          const body = await res.json();
+          if (body.data && Object.keys(body.data).length > 0) {
+            stored = body.data;
+            localStorage.setItem(STORAGE_PREFIX + date, JSON.stringify(stored));
+          }
+        }
+      } catch(e) {}
+    }
+
+    // Fallback to localStorage
+    if (!stored) {
+      const raw = localStorage.getItem(STORAGE_PREFIX + date);
+      if (raw) { stored = JSON.parse(raw); }
+      else {
+        for (const prefix of STORE_OLD_PREFIXES) {
+          const oldRaw = localStorage.getItem(prefix + date);
+          if (oldRaw) { stored = migrateData(JSON.parse(oldRaw), prefix); break; }
+        }
+      }
+    }
+
+    sectionData = {};
+    sections.forEach(id => {
+      sectionData[id] = (stored && Array.isArray(stored[id])) ? stored[id] : [];
+    });
+  }
+
+  function migrateData(oldData, prefix) {
+    const result = {};
+    sections.forEach(id => {
+      const val = oldData[id];
+      if (!val) { result[id] = []; return; }
+      if (Array.isArray(val)) {
+        // Already array format — migrate field names
+        result[id] = val.map(item => {
+          if (typeof item === 'string') return { timeStart: '', timeEnd: '', text: item };
+          if (item.timeStart !== undefined) return item; // already v3
+          if (item.time !== undefined) {
+            return { timeStart: item.time, timeEnd: '', text: item.text || '' };
+          }
+          return { timeStart: '', timeEnd: '', text: item.text || '' };
+        });
+      } else if (typeof val === 'string') {
+        result[id] = val.split('\n').filter(l => l.trim()).map(line => ({
+          timeStart: '', timeEnd: '', text: line.trim()
+        }));
+      }
+    });
+    return result;
+  }
+
+  function saveData() {
+    const date = dateKey(currentDate);
+    const isEmpty = sections.every(id => sectionData[id].length === 0);
+
+    // Always save to localStorage
+    if (isEmpty && !isToday(currentDate)) {
+      localStorage.removeItem(STORAGE_PREFIX + date);
+    } else {
+      localStorage.setItem(STORAGE_PREFIX + date, JSON.stringify(sectionData));
+    }
+
+    // Sync to API if available and logged in
+    if (apiAvailable && authToken) {
+      setSyncStatus('syncing');
+      apiFetch('/api/reflections', {
+        method: isEmpty ? 'DELETE' : 'POST',
+        body: JSON.stringify({ date, data: sectionData })
+      }).then(res => {
+        if (res.ok) setSyncStatus('online');
+        else setSyncStatus('offline');
+      }).catch(() => setSyncStatus('offline'));
+    }
+
+    const indicator = $('#saveIndicator');
+    indicator.classList.add('show');
+    clearTimeout(indicator._timeout);
+    indicator._timeout = setTimeout(() => indicator.classList.remove('show'), 1600);
+  }
+
+  // --- Render items ---
+  function renderSection(id) {
+    const list = listEls[id];
+    const items = sectionData[id];
+    list.innerHTML = '';
+
+    if (items.length === 0) {
+      list.classList.add('item-list-empty');
+      list.textContent = '点击下方「+」添加条目';
+      return;
+    }
+    list.classList.remove('item-list-empty');
+
+    items.forEach((item, index) => {
+      const row = document.createElement('div');
+      row.className = 'item-row';
+
+      const num = document.createElement('span');
+      num.className = 'item-number';
+      num.textContent = index + 1;
+
+      const chip = document.createElement('button');
+      chip.className = 'time-chip';
+      if (item.timeStart && item.timeEnd) {
+        chip.classList.add('has-time');
+        chip.innerHTML = `🕐 ${item.timeStart}-${item.timeEnd} <span class="chip-arrow">▾</span>`;
+      } else if (item.timeStart) {
+        chip.classList.add('has-time');
+        chip.innerHTML = `🕐 ${item.timeStart} <span class="chip-arrow">▾</span>`;
+      } else {
+        chip.innerHTML = `🕐 添加时间 <span class="chip-arrow">▾</span>`;
+      }
+      chip.addEventListener('click', (e) => { e.stopPropagation(); openTimePicker(id, index, chip); });
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'item-input';
+      input.value = item.text;
+      input.placeholder = getPlaceholder(id);
+      input.addEventListener('input', () => {
+        sectionData[id][index].text = input.value;
+        saveData();
+        if (id === 'actions') updatePieChart();
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); addItemAfter(id, index); }
+        else if (e.key === 'Backspace' && input.value === '' && items.length > 1) {
+          e.preventDefault(); deleteItem(id, index);
+        }
+      });
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'item-delete';
+      delBtn.textContent = '×';
+      delBtn.addEventListener('click', () => { deleteItem(id, index); });
+
+      row.append(num, chip, input, delBtn);
+      list.appendChild(row);
+    });
+  }
+
+  function renderAllSections() {
+    sections.forEach(id => renderSection(id));
+    updatePieChart();
+  }
+
+  function getPlaceholder(sectionId) {
+    const map = {
+      actions: '做了什么...',
+      problems: '描述问题和解决过程...',
+      skills: '学到了什么...',
+      highlight: '最重要的一件事...',
+      regrets: '本不该做的事...'
+    };
+    return map[sectionId] || '...';
+  }
+
+  // --- Item CRUD ---
+  function addItem(sectionId) {
+    sectionData[sectionId].push({ timeStart: '', timeEnd: '', text: '' });
+    renderSection(sectionId);
+    saveData();
+    if (sectionId === 'actions') updatePieChart();
+    const inputs = listEls[sectionId].querySelectorAll('.item-input');
+    const last = inputs[inputs.length - 1];
+    if (last) { last.focus(); last.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  }
+
+  function addItemAfter(sectionId, index) {
+    sectionData[sectionId].splice(index + 1, 0, { timeStart: '', timeEnd: '', text: '' });
+    renderSection(sectionId);
+    saveData();
+    if (sectionId === 'actions') updatePieChart();
+    const inputs = listEls[sectionId].querySelectorAll('.item-input');
+    const next = inputs[index + 1];
+    if (next) next.focus();
+  }
+
+  function deleteItem(sectionId, index) {
+    sectionData[sectionId].splice(index, 1);
+    renderSection(sectionId);
+    saveData();
+    if (sectionId === 'actions') updatePieChart();
+    const inputs = listEls[sectionId].querySelectorAll('.item-input');
+    if (inputs.length > 0) {
+      const focusIdx = Math.min(index, inputs.length - 1);
+      inputs[focusIdx].focus();
+    }
+  }
+
+  // --- Time Picker (Range) ---
+  function openTimePicker(sectionId, index, chipEl) {
+    pickerTarget = { sectionId, index };
+    const item = sectionData[sectionId][index];
+
+    $('#timeStartInput').value = item.timeStart || '09:00';
+    $('#timeEndInput').value = item.timeEnd || '10:00';
+
+    const popover = $('#timePickerPopover');
+    const chipRect = chipEl.getBoundingClientRect();
+    let top = chipRect.bottom + 6;
+    let left = chipRect.left;
+    if (left + 270 > window.innerWidth) left = window.innerWidth - 278;
+    if (top + 380 > window.innerHeight) top = chipRect.top - 386;
+    if (left < 8) left = 8;
+    if (top < 8) top = 8;
+
+    popover.style.top = top + 'px';
+    popover.style.left = left + 'px';
+
+    $('#timePickerOverlay').classList.add('open');
+    requestAnimationFrame(() => popover.classList.add('visible'));
+  }
+
+  function closeTimePicker() {
+    pickerTarget = null;
+    $('#timePickerPopover').classList.remove('visible');
+    setTimeout(() => $('#timePickerOverlay').classList.remove('open'), 200);
+  }
+
+  function applyTimeRange(timeStart, timeEnd) {
+    if (!pickerTarget) return;
+    const { sectionId, index } = pickerTarget;
+    sectionData[sectionId][index].timeStart = timeStart;
+    sectionData[sectionId][index].timeEnd = timeEnd;
+    renderSection(sectionId);
+    saveData();
+    if (sectionId === 'actions') updatePieChart();
+    closeTimePicker();
+  }
+
+  // Time picker events
+  $('#timePickerOverlay').addEventListener('click', (e) => {
+    if (e.target === $('#timePickerOverlay')) closeTimePicker();
+  });
+
+  $$('.time-preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $('#timeStartInput').value = btn.dataset.start;
+      $('#timeEndInput').value = btn.dataset.end;
+    });
+  });
+
+  $('#tpApplyBtn').addEventListener('click', () => {
+    applyTimeRange($('#timeStartInput').value, $('#timeEndInput').value);
+  });
+
+  $('#tpClearBtn').addEventListener('click', () => {
+    applyTimeRange('', '');
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && pickerTarget) { closeTimePicker(); }
+  });
+
+  // --- Date Picker ---
+  function openDatePicker() {
+    dpCalendarMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    renderCalendar();
+    const wrap = $('#dateDisplayWrap');
+    const wrapRect = wrap.getBoundingClientRect();
+    const popover = $('#datePickerPopover');
+    let top = wrapRect.bottom + 8;
+    let left = wrapRect.left + (wrapRect.width / 2) - 150;
+    if (left < 8) left = 8;
+    if (left + 300 > window.innerWidth) left = window.innerWidth - 308;
+    if (top + 380 > window.innerHeight) top = wrapRect.top - 388;
+    if (top < 8) top = 8;
+
+    popover.style.top = top + 'px';
+    popover.style.left = left + 'px';
+
+    $('#datePickerOverlay').classList.add('open');
+    requestAnimationFrame(() => popover.classList.add('visible'));
+  }
+
+  function closeDatePicker() {
+    $('#datePickerPopover').classList.remove('visible');
+    setTimeout(() => $('#datePickerOverlay').classList.remove('open'), 200);
+  }
+
+  function getDaysWithData(year, month) {
+    const days = new Set();
+    for (let d = 1; d <= 31; d++) {
+      const date = new Date(year, month, d);
+      if (date.getMonth() !== month) break;
+      const key = STORAGE_PREFIX + dateKey(date);
+      if (localStorage.getItem(key)) days.add(d);
+      else {
+        // Check old prefixes
+        for (const prefix of STORE_OLD_PREFIXES) {
+          if (localStorage.getItem(prefix + dateKey(date))) { days.add(d); break; }
+        }
+      }
+    }
+    return days;
+  }
+
+  function renderCalendar() {
+    const year = dpCalendarMonth.getFullYear();
+    const month = dpCalendarMonth.getMonth();
+    $('#dpMonthLabel').textContent = `${year}年${month+1}月`;
+
+    const daysWithData = getDaysWithData(year, month);
+    const grid = $('#dpGrid');
+    grid.innerHTML = '';
+
+    // First day of month (0=Sun, convert to Mon=0)
+    const firstDay = new Date(year, month, 1).getDay();
+    const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+
+    // Days in month
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // Previous month days
+    const prevMonthDays = new Date(year, month, 0).getDate();
+    for (let i = startOffset - 1; i >= 0; i--) {
+      const day = prevMonthDays - i;
+      const btn = createDayBtn(day, true, false);
+      grid.appendChild(btn);
+    }
+
+    // Current month days
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(year, month, d);
+      const isTodayDate = sameDay(date, today);
+      const isSelected = sameDay(date, currentDate);
+      const hasData = daysWithData.has(d);
+      const btn = createDayBtn(d, false, isTodayDate, isSelected, hasData);
+      btn.addEventListener('click', () => {
+        goToDate(date);
+        closeDatePicker();
+      });
+      grid.appendChild(btn);
+    }
+
+    // Fill remaining cells
+    const totalCells = startOffset + daysInMonth;
+    const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+    for (let d = 1; d <= remaining; d++) {
+      grid.appendChild(createDayBtn(d, true, false));
+    }
+  }
+
+  function createDayBtn(day, otherMonth, isTodayDate, isSelected, hasData) {
+    const btn = document.createElement('button');
+    btn.className = 'dp-day';
+    if (otherMonth) btn.classList.add('other-month');
+    if (isTodayDate) btn.classList.add('today');
+    if (isSelected) btn.classList.add('selected');
+    btn.textContent = day;
+    if (hasData) {
+      const dot = document.createElement('span');
+      dot.className = 'has-data-dot';
+      btn.appendChild(dot);
+    }
+    return btn;
+  }
+
+  // Date picker events
+  $('#datePickerOverlay').addEventListener('click', (e) => {
+    if (e.target === $('#datePickerOverlay')) closeDatePicker();
+  });
+  $('#dateDisplayWrap').addEventListener('click', openDatePicker);
+  $('#dpPrevMonth').addEventListener('click', () => {
+    dpCalendarMonth.setMonth(dpCalendarMonth.getMonth() - 1);
+    renderCalendar();
+  });
+  $('#dpNextMonth').addEventListener('click', () => {
+    dpCalendarMonth.setMonth(dpCalendarMonth.getMonth() + 1);
+    renderCalendar();
+  });
+  $('#dpTodayBtn').addEventListener('click', () => {
+    goToDate(today);
+    closeDatePicker();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && $('#datePickerOverlay').classList.contains('open')) {
+      closeDatePicker();
+    }
+  });
+
+  // --- Pie Chart ---
+  function timeToMinutes(t) {
+    if (!t) return 0;
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + (m || 0);
+  }
+
+  function updatePieChart() {
+    const items = sectionData['actions'].filter(i => i.timeStart && i.timeEnd);
+    const panel = $('#piePanel');
+    const donut = $('#pieDonut');
+    const legend = $('#pieLegend');
+    const totalEl = $('#pieTotal');
+
+    if (items.length === 0) {
+      panel.classList.remove('visible');
+      return;
+    }
+    panel.classList.add('visible');
+
+    // Calculate durations
+    const withDuration = items.map((item, i) => {
+      const start = timeToMinutes(item.timeStart);
+      let end = timeToMinutes(item.timeEnd);
+      if (end <= start) end += 24 * 60; // Handle overnight
+      return { ...item, duration: end - start, origIndex: i };
+    }).filter(i => i.duration > 0);
+
+    if (withDuration.length === 0) { panel.classList.remove('visible'); return; }
+
+    const totalMin = withDuration.reduce((s, i) => s + i.duration, 0);
+    const totalH = (totalMin / 60).toFixed(1);
+    totalEl.textContent = totalH + 'h';
+
+    // Generate conic gradient
+    let cumulative = 0;
+    const stops = withDuration.map((item, i) => {
+      const pct = (item.duration / totalMin) * 100;
+      const start = cumulative;
+      cumulative += pct;
+      const color = CHART_COLORS[i % CHART_COLORS.length];
+      return `${color} ${start.toFixed(1)}% ${cumulative.toFixed(1)}%`;
+    });
+
+    donut.style.background = `conic-gradient(${stops.join(', ')})`;
+
+    // Legend
+    legend.innerHTML = withDuration.map((item, i) => {
+      const pct = ((item.duration / totalMin) * 100).toFixed(1);
+      const color = CHART_COLORS[i % CHART_COLORS.length];
+      const text = item.text || '(未命名)';
+      return `<div class="pie-legend-item">
+        <span class="pie-legend-dot" style="background:${color}"></span>
+        <span class="pie-legend-text" title="${text}">${text}</span>
+        <span class="pie-legend-pct">${pct}%</span>
+      </div>`;
+    }).join('');
+  }
+
+  // --- Date navigation ---
+  function renderDate() {
+    $('#weekday').textContent = weekdays[currentDate.getDay()];
+    $('#dateStr').textContent = formatDate(currentDate);
+    const badge = $('#todayBadge');
+    if (isToday(currentDate)) badge.classList.add('visible');
+    else badge.classList.remove('visible');
+  }
+
+  async function goToDate(d) {
+    currentDate = new Date(d);
+    renderDate();
+    await loadData();
+    renderAllSections();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  $('#prevDay').addEventListener('click', () => {
+    const prev = new Date(currentDate); prev.setDate(prev.getDate() - 1);
+    goToDate(prev);
+  });
+  $('#nextDay').addEventListener('click', () => {
+    const next = new Date(currentDate); next.setDate(next.getDate() + 1);
+    goToDate(next);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || pickerTarget ||
+        $('#datePickerOverlay').classList.contains('open')) return;
+    if (e.key === 'ArrowLeft') {
+      const prev = new Date(currentDate); prev.setDate(prev.getDate() - 1);
+      goToDate(prev);
+    } else if (e.key === 'ArrowRight') {
+      const next = new Date(currentDate); next.setDate(next.getDate() + 1);
+      goToDate(next);
+    }
+  });
+
+  // --- Add-item hints & empty state click ---
+  $$('.add-item-hint').forEach(hint => {
+    hint.addEventListener('click', () => addItem(hint.dataset.section));
+  });
+  $$('.item-list').forEach(list => {
+    list.addEventListener('click', (e) => {
+      if (e.target === list && list.classList.contains('item-list-empty')) {
+        addItem(list.id.replace('list-', ''));
+      }
+    });
+  });
+
+  // --- Section dots ---
+  $$('.section-dot').forEach(dot => {
+    dot.addEventListener('click', () => {
+      const card = document.querySelector(`[data-section="${dot.dataset.target}"]`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.style.boxShadow = '0 0 0 1px rgba(200,135,58,0.3), 0 0 30px rgba(200,135,58,0.1)';
+        setTimeout(() => { card.style.boxShadow = ''; }, 1200);
+      }
+    });
+  });
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const section = entry.target.dataset.section;
+        $$('.section-dot').forEach(d => d.classList.toggle('active', d.dataset.target === section));
+      }
+    });
+  }, { threshold: 0.5 });
+  document.querySelectorAll('.card[data-section]').forEach(card => observer.observe(card));
+
+  // --- Init ---
+  async function init() {
+    renderDate();
+    await detectAPI();
+
+    if (apiAvailable && authToken) {
+      // Verify token is still valid
+      try {
+        const res = await apiFetch('/api/auth/me');
+        if (res.ok) {
+          setSyncStatus('online');
+          hideAuthOverlay();
+          await loadData();
+          renderAllSections();
+          console.log('%c已连接后端服务器 · 已登录', 'color: #5a8a6a; font-size: 12px;');
+          console.log('%c每日反思 · Daily Reflection %c已就绪',
+            'font-family: "Noto Serif SC", serif; font-size: 16px; color: #d4a04a;',
+            'color: #a09888;');
+          return;
+        }
+      } catch(e) {}
+      // Token invalid
+      clearAuth();
+    }
+
+    if (apiAvailable) {
+      // Server available but not logged in
+      setSyncStatus('online');
+      showAuthOverlay();
+      console.log('%c已连接后端服务器 · 请登录', 'color: #5a8a6a; font-size: 12px;');
+    } else {
+      // Offline mode
+      setSyncStatus('offline');
+      hideAuthOverlay();
+      await loadData();
+      renderAllSections();
+      console.log('%c离线模式 · 使用本地存储', 'color: #6b6458; font-size: 12px;');
+      console.log('%c每日反思 · Daily Reflection %c已就绪',
+        'font-family: "Noto Serif SC", serif; font-size: 16px; color: #d4a04a;',
+        'color: #a09888;');
+      console.log('%c点击日期打开月历 · 点击时间设置开始/结束 · 饼状图显示时间占比',
+        'color: #6b6458; font-size: 12px;');
+    }
+  }
+  init();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日反思 · 管理后台</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Quattrocento+Sans:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #161410;
+    --bg-card: #1f1c18;
+    --bg-card-alt: #221e1a;
+    --text-primary: #e0d6c5;
+    --text-secondary: #a09888;
+    --text-muted: #6b6458;
+    --accent-amber: #c8873a;
+    --accent-gold: #d4a04a;
+    --accent-rose: #b55a4a;
+    --border-warm: #2e2922;
+    --border-accent: #3d3325;
+    --green: #5a8a6a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Quattrocento Sans', 'PingFang SC', 'Noto Sans SC', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+  }
+  body::before {
+    content: ''; position: fixed;
+    top: -40%; left: -20%; width: 80%; height: 80%;
+    background: radial-gradient(ellipse at center, rgba(200,135,58,0.04) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .noise {
+    position: fixed; inset: 0; opacity: 0.02;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+    pointer-events: none; z-index: 1;
+  }
+  .container {
+    position: relative; z-index: 2;
+    width: 100%; max-width: 960px;
+    padding: 36px 24px 80px;
+  }
+
+  /* Header */
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 32px; flex-wrap: wrap; gap: 16px;
+  }
+  .top-bar h1 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 1.4rem; font-weight: 700;
+    color: var(--text-primary);
+  }
+  .top-bar .subtitle {
+    font-size: 0.75rem; color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .top-actions {
+    display: flex; gap: 10px; align-items: center;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 8px;
+    font-size: 0.78rem; cursor: pointer;
+    font-family: inherit; text-decoration: none;
+    transition: all 0.2s ease;
+    border: 1px solid var(--border-warm);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+  }
+  .btn:hover {
+    border-color: var(--accent-amber);
+    color: var(--accent-gold);
+  }
+  .btn.primary {
+    background: rgba(200,135,58,0.15);
+    border-color: rgba(200,135,58,0.3);
+    color: var(--accent-gold);
+  }
+  .btn.primary:hover { background: rgba(200,135,58,0.25); }
+  .btn.danger { color: var(--text-secondary); }
+  .btn.danger:hover { border-color: var(--accent-rose); color: var(--accent-rose); }
+  .btn.small { padding: 4px 10px; font-size: 0.7rem; }
+
+  /* Stats cards */
+  .stats-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px; margin-bottom: 28px;
+  }
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-warm);
+    border-radius: 10px; padding: 16px;
+    text-align: center;
+  }
+  .stat-value {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 1.8rem; font-weight: 700;
+    color: var(--accent-amber);
+  }
+  .stat-label {
+    font-size: 0.72rem; color: var(--text-muted);
+    margin-top: 2px; letter-spacing: 0.04em;
+  }
+
+  /* Search */
+  .search-wrap {
+    position: relative; margin-bottom: 20px;
+  }
+  .search-input {
+    width: 100%;
+    padding: 10px 16px 10px 38px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-warm);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-family: inherit; font-size: 0.88rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  .search-input:focus { border-color: var(--accent-amber); }
+  .search-input::placeholder { color: var(--text-muted); }
+  .search-icon {
+    position: absolute; left: 12px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted); font-size: 0.8rem;
+  }
+  .search-results-info {
+    font-size: 0.72rem; color: var(--text-muted);
+    margin: 8px 0 0 4px;
+  }
+
+  /* Date list */
+  .date-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .date-table th {
+    text-align: left; font-size: 0.7rem; font-weight: 600;
+    color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 8px 12px;
+    border-bottom: 1px solid var(--border-warm);
+  }
+  .date-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(46,41,34,0.5);
+    font-size: 0.84rem;
+  }
+  .date-row {
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .date-row:hover { background: rgba(200,135,58,0.04); }
+  .date-row.expanded { background: rgba(200,135,58,0.06); }
+
+  .date-link {
+    font-family: 'Noto Serif SC', serif;
+    color: var(--accent-gold); font-weight: 600;
+    text-decoration: none;
+  }
+  .date-link:hover { text-decoration: underline; }
+  .date-weekday { font-size: 0.7rem; color: var(--text-muted); margin-left: 6px; }
+
+  .section-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+  .section-badge {
+    font-size: 0.66rem; padding: 2px 8px;
+    border-radius: 100px;
+    background: rgba(200,135,58,0.08);
+    color: var(--text-secondary);
+  }
+  .section-badge.has-time { background: rgba(200,135,58,0.14); color: var(--accent-gold); }
+
+  .time-badge {
+    font-size: 0.7rem; color: var(--accent-amber);
+    font-family: 'Quattrocento Sans', sans-serif;
+  }
+
+  /* Expand detail */
+  .detail-row { display: none; }
+  .detail-row.open { display: table-row; }
+  .detail-cell {
+    padding: 16px 20px !important;
+    background: rgba(200,135,58,0.02);
+  }
+  .detail-section {
+    margin-bottom: 14px;
+  }
+  .detail-section-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.82rem; font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+  .detail-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 4px 0; font-size: 0.8rem; color: var(--text-secondary);
+  }
+  .detail-item-num {
+    color: var(--text-muted); font-weight: 600;
+    min-width: 18px;
+  }
+  .detail-item-time {
+    color: var(--accent-amber); font-size: 0.72rem;
+    white-space: nowrap; min-width: 100px;
+  }
+  .detail-item-text { flex: 1; }
+
+  .detail-actions {
+    margin-top: 12px; display: flex; gap: 8px;
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .empty-state .icon { font-size: 2rem; margin-bottom: 12px; opacity: 0.5; }
+  .empty-state .text { font-size: 0.9rem; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 32px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--bg-card);
+    border: 1px solid var(--border-accent);
+    padding: 8px 20px; border-radius: 100px;
+    font-size: 0.78rem; color: var(--text-secondary);
+    opacity: 0; transition: all 0.3s ease;
+    pointer-events: none; z-index: 99;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    z-index: 100; display: none;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg-card);
+    border: 1px solid var(--border-accent);
+    border-radius: 14px; padding: 24px;
+    max-width: 420px; width: 90%;
+    text-align: center;
+  }
+  .modal h3 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 1rem; margin-bottom: 12px;
+    color: var(--text-primary);
+  }
+  .modal p { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 18px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: center; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-accent); border-radius: 3px; }
+
+  /* ===== AUTH OVERLAY ===== */
+  .auth-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(10,9,7,0.88);
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .auth-overlay.hidden { display: none; }
+  .auth-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-warm);
+    border-radius: 16px;
+    padding: 36px 32px;
+    width: 380px; max-width: 90vw;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    animation: authEnter 0.5s ease;
+  }
+  @keyframes authEnter {
+    from { opacity: 0; transform: translateY(16px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .auth-card h2 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 1.3rem; font-weight: 700;
+    color: var(--text-primary); text-align: center; margin-bottom: 6px;
+  }
+  .auth-subtitle { text-align: center; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 24px; }
+  .auth-tabs { display: flex; margin-bottom: 24px; border-bottom: 1px solid var(--border-warm); }
+  .auth-tab {
+    flex: 1; text-align: center; padding: 10px 0;
+    background: none; border: none; cursor: pointer;
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.88rem; color: var(--text-muted);
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: all 0.2s ease;
+  }
+  .auth-tab.active { color: var(--accent-gold); border-bottom-color: var(--accent-amber); }
+  .auth-tab:hover { color: var(--text-secondary); }
+  .auth-field { margin-bottom: 14px; }
+  .auth-field label { display: block; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px; }
+  .auth-field input {
+    width: 100%; padding: 10px 14px;
+    background: rgba(200,135,58,0.04);
+    border: 1px solid var(--border-warm); border-radius: 8px;
+    color: var(--text-primary); font-family: inherit; font-size: 0.9rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  .auth-field input:focus { border-color: var(--accent-amber); }
+  .auth-error { font-size: 0.75rem; color: var(--accent-rose); text-align: center; margin-bottom: 12px; min-height: 18px; }
+  .auth-submit {
+    width: 100%; padding: 12px;
+    background: rgba(200,135,58,0.2);
+    border: 1px solid rgba(200,135,58,0.3); border-radius: 10px;
+    color: var(--accent-gold);
+    font-family: 'Noto Serif SC', serif; font-size: 0.95rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s ease;
+  }
+  .auth-submit:hover { background: rgba(200,135,58,0.3); }
+  .auth-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .user-info { font-size: 0.75rem; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
+  .logout-link { color: var(--text-muted); cursor: pointer; font-size: 0.72rem; border: none; background: none; font-family: inherit; }
+  .logout-link:hover { color: var(--accent-rose); }
+
+  @media (max-width: 600px) {
+    .container { padding: 20px 12px 60px; }
+    .top-bar { flex-direction: column; align-items: flex-start; }
+    .date-table th:nth-child(3),
+    .date-table td:nth-child(3) { display: none; }
+    .detail-item { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+
+<!-- Auth Overlay -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <h2>管理后台</h2>
+    <div class="auth-subtitle">请登录以查看记录</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="login">登录</button>
+      <button class="auth-tab" data-tab="register">创建账号</button>
+    </div>
+    <div class="auth-field">
+      <label>用户名</label>
+      <input type="text" id="authUsername" placeholder="输入用户名" autocomplete="username">
+    </div>
+    <div class="auth-field">
+      <label>密码</label>
+      <input type="password" id="authPassword" placeholder="输入密码" autocomplete="current-password">
+    </div>
+    <div class="auth-error" id="authError"></div>
+    <button class="auth-submit" id="authSubmit">登录</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="top-bar">
+    <div>
+      <h1>每日反思 · 管理后台</h1>
+      <div class="subtitle">所有记录一览，点击日期查看详情</div>
+    </div>
+    <div class="top-actions">
+      <span class="user-info" id="userInfo" style="display:none">
+        👤 <span id="userNameDisplay"></span>
+        <button class="logout-link" id="logoutBtn">退出</button>
+      </span>
+      <span id="loginPrompt" style="font-size:0.75rem;color:var(--text-muted)">未登录</span>
+      <a href="/" class="btn">← 回到主页</a>
+      <button class="btn primary" id="refreshBtn">刷新数据</button>
+    </div>
+  </div>
+
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card"><div class="stat-value" id="statDays">-</div><div class="stat-label">总记录天数</div></div>
+    <div class="stat-card"><div class="stat-value" id="statWeek">-</div><div class="stat-label">本周记录</div></div>
+    <div class="stat-card"><div class="stat-value" id="statEntries">-</div><div class="stat-label">总条目数</div></div>
+    <div class="stat-card"><div class="stat-value" id="statRange">-</div><div class="stat-label">最早记录</div></div>
+  </div>
+
+  <div class="stats-row" id="adminBar" style="display:none"></div>
+
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" class="search-input" id="searchInput"
+      placeholder="搜索关键词...（回车搜索）">
+    <div class="search-results-info" id="searchInfo"></div>
+  </div>
+
+  <div id="content">
+    <table class="date-table">
+      <thead>
+        <tr>
+          <th>日期</th>
+          <th>板块摘要</th>
+          <th>时间统计</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="dateTableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="empty-state" id="emptyState" style="display:none">
+    <div class="icon">📝</div>
+    <div class="text">还没有任何记录<br>去<a href="/" style="color:var(--accent-amber)">主页</a>写点东西吧</div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <h3>确认删除</h3>
+    <p>确定要删除 <strong id="deleteDateLabel"></strong> 的所有反思记录吗？此操作不可恢复。</p>
+    <div class="modal-actions">
+      <button class="btn" id="deleteCancel">取消</button>
+      <button class="btn danger" id="deleteConfirm">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  const API = '';
+  const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+
+  // ── Auth ──
+  let authToken = localStorage.getItem('reflection_auth_token') || '';
+  let authUsername = localStorage.getItem('reflection_auth_username') || '';
+  let authRole = localStorage.getItem('reflection_auth_role') || 'user';
+  let selectedUserId = ''; // empty = all users (for admin)
+
+  async function apiFetch(url, opts = {}) {
+    const headers = { ...(opts.headers || {}) };
+    if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+    if (opts.body && typeof opts.body === 'string') {
+      headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+    }
+    const res = await fetch(API + url, { ...opts, headers });
+    if (res.status === 401) { clearAuth(); showAuthOverlay(); throw new Error('unauthorized'); }
+    return res;
+  }
+
+  async function fetchJSON(url, opts) {
+    const res = await apiFetch(url, opts);
+    if (!res.ok) throw new Error(res.statusText);
+    return res.json();
+  }
+
+  function showAuthOverlay() {
+    document.getElementById('authOverlay').classList.remove('hidden');
+    document.getElementById('authUsername').value = '';
+    document.getElementById('authPassword').value = '';
+    document.getElementById('authError').textContent = '';
+    switchAuthTab('login');
+  }
+
+  function hideAuthOverlay() {
+    document.getElementById('authOverlay').classList.add('hidden');
+    document.getElementById('userInfo').style.display = 'flex';
+    document.getElementById('loginPrompt').style.display = 'none';
+    document.getElementById('userNameDisplay').textContent = authUsername;
+  }
+
+  function clearAuth() {
+    authToken = ''; authUsername = ''; authRole = 'user';
+    localStorage.removeItem('reflection_auth_token');
+    localStorage.removeItem('reflection_auth_username');
+    localStorage.removeItem('reflection_auth_role');
+    document.getElementById('userInfo').style.display = 'none';
+    document.getElementById('loginPrompt').style.display = 'inline';
+    document.getElementById('adminBar').style.display = 'none';
+  }
+
+  function switchAuthTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.getElementById('authSubmit').textContent = tab === 'login' ? '登录' : '创建账号';
+    document.getElementById('authError').textContent = '';
+  }
+
+  async function handleAuth() {
+    const isLogin = document.querySelector('.auth-tab.active').dataset.tab === 'login';
+    const username = document.getElementById('authUsername').value.trim();
+    const password = document.getElementById('authPassword').value.trim();
+    const errorEl = document.getElementById('authError');
+    const submitBtn = document.getElementById('authSubmit');
+
+    if (!username || !password) { errorEl.textContent = '请填写用户名和密码'; return; }
+
+    submitBtn.disabled = true; submitBtn.textContent = '处理中...'; errorEl.textContent = '';
+
+    try {
+      const res = await fetch(API + '/api/auth/' + (isLogin ? 'login' : 'register'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        authToken = data.token; authUsername = data.username;
+        localStorage.setItem('reflection_auth_token', authToken);
+        localStorage.setItem('reflection_auth_username', authUsername);
+        // Fetch role
+        try {
+          const meRes = await fetch(API + '/api/auth/me', { headers: {'Authorization': 'Bearer '+authToken} });
+          const meData = await meRes.json();
+          localStorage.setItem('reflection_auth_role', meData.role || 'user');
+        } catch(e) {}
+        hideAuthOverlay();
+        loadAll();
+      } else {
+        errorEl.textContent = data.error || '操作失败';
+      }
+    } catch (e) { errorEl.textContent = '无法连接服务器'; }
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = isLogin ? '登录' : '创建账号';
+  }
+
+  document.querySelectorAll('.auth-tab').forEach(tab => {
+    tab.addEventListener('click', () => switchAuthTab(tab.dataset.tab));
+  });
+  document.getElementById('authSubmit').addEventListener('click', handleAuth);
+  ['authUsername', 'authPassword'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') handleAuth(); });
+  });
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    if (authToken) { try { await apiFetch('/api/auth/logout', { method: 'POST' }); } catch(e) {} }
+    clearAuth(); showAuthOverlay();
+    document.getElementById('dateTableBody').innerHTML = '';
+    ['statDays','statWeek','statEntries','statRange'].forEach(id => document.getElementById(id).textContent = '-');
+  });
+  const sectionNames = {
+    actions: '今日所做', problems: '处理的问题', skills: '学习的技能',
+    highlight: '今日之最', regrets: '不该做的事'
+  };
+
+  let allDates = [];
+  let currentSearch = '';
+  let deleteTarget = null;
+
+  const toastTimer = {};
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer._t);
+    toastTimer._t = setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  // ── Load data ──
+  async function loadAll() {
+    try {
+      if (authRole === 'admin') {
+        // Admin: load all users' reflections
+        const [reflectionsAll, stats, users] = await Promise.all([
+          fetchJSON('/api/reflections/all' + (selectedUserId ? '?user_id=' + selectedUserId : '')),
+          fetchJSON('/api/admin/stats'),
+          fetchJSON('/api/admin/users')
+        ]);
+        allDates = reflectionsAll;
+
+        document.getElementById('statDays').textContent = stats.total_days;
+        document.getElementById('statWeek').textContent = stats.total_users + ' 人';
+        document.getElementById('statEntries').textContent = stats.total_entries;
+        document.getElementById('statRange').textContent = stats.first_date || '-';
+
+        // Populate admin bar with user selector
+        const adminBar = document.getElementById('adminBar');
+        adminBar.style.display = 'flex';
+        adminBar.innerHTML = `
+          <div class="stat-card" style="flex:none;display:flex;align-items:center;gap:12px;padding:12px 20px;width:100%">
+            <span style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap">查看用户:</span>
+            <select id="userSelect" style="
+              flex:1;max-width:240px;padding:8px 12px;
+              background:rgba(200,135,58,0.06);border:1px solid var(--border-warm);
+              border-radius:8px;color:var(--text-primary);font-family:inherit;font-size:0.82rem;outline:none
+            ">
+              <option value="">全部用户</option>
+              ${users.map(u => `<option value="${u.id}" ${selectedUserId==u.id?'selected':''}>${u.username} ${u.role==='admin'?'(管理员)':''}</option>`).join('')}
+            </select>
+            <button class="btn small" id="refreshUserBtn">刷新</button>
+          </div>`;
+        document.getElementById('userSelect').addEventListener('change', (e) => {
+          selectedUserId = e.target.value;
+          loadAll();
+        });
+        document.getElementById('refreshUserBtn').addEventListener('click', () => loadAll());
+
+        if (currentSearch) {
+          doSearch(currentSearch);
+        } else {
+          renderDateListAdmin(reflectionsAll);
+        }
+      } else {
+        // Regular user: own data only
+        const [dates, stats] = await Promise.all([
+          fetchJSON('/api/reflections'),
+          fetchJSON('/api/stats')
+        ]);
+        allDates = dates;
+
+        document.getElementById('statDays').textContent = stats.total_days;
+        document.getElementById('statWeek').textContent = stats.this_week;
+        document.getElementById('statEntries').textContent = stats.total_entries;
+        document.getElementById('statRange').textContent = stats.first_date || '-';
+
+        if (currentSearch) {
+          doSearch(currentSearch);
+        } else {
+          renderDateList(dates);
+        }
+      }
+    } catch (e) {
+      document.getElementById('statDays').textContent = '--';
+      document.getElementById('emptyState').style.display = 'block';
+      document.querySelector('.date-table').style.display = 'none';
+      showToast('无法连接服务器');
+    }
+  }
+
+  function renderDateList(dates) {
+    const tbody = document.getElementById('dateTableBody');
+    const empty = document.getElementById('emptyState');
+    const table = document.querySelector('.date-table');
+
+    // Reset table header for regular view
+    const thead = table.querySelector('thead tr');
+    thead.innerHTML = '<th>日期</th><th>板块摘要</th><th>时间统计</th><th>操作</th>';
+
+    if (dates.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      table.style.display = 'none';
+      document.getElementById('searchInfo').textContent = '';
+      return;
+    }
+    empty.style.display = 'none';
+    table.style.display = '';
+
+    tbody.innerHTML = dates.map(d => {
+      const date = new Date(d.date + 'T00:00:00');
+      const wd = weekdays[date.getDay()];
+      const formattedDate = `${date.getFullYear()}年${date.getMonth()+1}月${date.getDate()}日`;
+      return `
+        <tr class="date-row" data-date="${d.date}">
+          <td>
+            <span class="date-link">${formattedDate}</span>
+            <span class="date-weekday">周${wd}</span>
+          </td>
+          <td><div class="section-badges" id="badges-${d.date}"></div></td>
+          <td><span class="time-badge" id="time-${d.date}"></span></td>
+          <td>
+            <button class="btn small" data-action="expand" data-date="${d.date}">展开</button>
+            <button class="btn small danger" data-action="delete" data-date="${d.date}">删除</button>
+          </td>
+        </tr>
+        <tr class="detail-row" id="detail-${d.date}">
+          <td colspan="4" class="detail-cell">
+            <div id="detail-content-${d.date}">加载中...</div>
+            <div class="detail-actions">
+              <button class="btn small danger" data-action="delete" data-date="${d.date}">删除此日记录</button>
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+
+    // Load summaries asynchronously
+    dates.forEach(d => loadSummary(d.date));
+  }
+
+  function renderDateListAdmin(reflections) {
+    const tbody = document.getElementById('dateTableBody');
+    const empty = document.getElementById('emptyState');
+    const table = document.querySelector('.date-table');
+
+    // Update table header for admin view
+    const thead = table.querySelector('thead tr');
+    thead.innerHTML = '<th>日期</th><th>用户</th><th>板块摘要</th><th>操作</th>';
+
+    if (reflections.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      table.style.display = 'none';
+      document.getElementById('searchInfo').textContent = '';
+      return;
+    }
+    empty.style.display = 'none';
+    table.style.display = '';
+
+    tbody.innerHTML = reflections.map(r => {
+      const date = new Date(r.date + 'T00:00:00');
+      const wd = weekdays[date.getDay()];
+      const formattedDate = `${date.getFullYear()}年${date.getMonth()+1}月${date.getDate()}日`;
+      return `
+        <tr class="date-row" data-date="${r.date}" data-user="${r.user_id}">
+          <td>
+            <span class="date-link">${formattedDate}</span>
+            <span class="date-weekday">周${wd}</span>
+          </td>
+          <td><span style="font-size:0.78rem;color:var(--accent-gold)">${r.username}</span></td>
+          <td><div class="section-badges" id="badges-${r.date}-${r.user_id}"></div></td>
+          <td>
+            <button class="btn small" data-action="expand" data-date="${r.date}" data-uid="${r.user_id}">展开</button>
+          </td>
+        </tr>
+        <tr class="detail-row" id="detail-${r.date}-${r.user_id}">
+          <td colspan="4" class="detail-cell">
+            <div id="detail-content-${r.date}-${r.user_id}">加载中...</div>
+          </td>
+        </tr>`;
+    }).join('');
+
+    // Load summaries
+    reflections.forEach(r => loadSummaryAdmin(r.date, r.user_id));
+  }
+
+  async function loadSummaryAdmin(dateStr, userId) {
+    try {
+      const res = await fetchJSON(`/api/reflections/all?user_id=${userId}`);
+      const items = res.find(r => r.date === dateStr);
+      const data = items ? items.data : {};
+      const badges = [];
+
+      for (const [sectionId, itemsList] of Object.entries(data)) {
+        if (!Array.isArray(itemsList) || itemsList.length === 0) continue;
+        badges.push(`<span class="section-badge">${sectionNames[sectionId] || sectionId} ×${itemsList.length}</span>`);
+      }
+
+      const badgeEl = document.getElementById(`badges-${dateStr}-${userId}`);
+      if (badgeEl) badgeEl.innerHTML = badges.join('') || '<span style="color:var(--text-muted);font-size:0.7rem">空</span>';
+    } catch (e) { /* ignore */ }
+  }
+
+  async function loadSummary(dateStr) {
+    try {
+      const res = await fetchJSON(`/api/reflections?date=${dateStr}`);
+      const data = res.data || {};
+      const badges = [];
+      let totalMin = 0;
+
+      for (const [sectionId, items] of Object.entries(data)) {
+        if (!Array.isArray(items) || items.length === 0) continue;
+        const hasTime = items.some(i => i.timeStart && i.timeEnd);
+        badges.push(`<span class="section-badge${hasTime ? ' has-time' : ''}">${sectionNames[sectionId] || sectionId} ×${items.length}</span>`);
+
+        // Calculate time for actions section
+        if (sectionId === 'actions') {
+          items.forEach(i => {
+            if (i.timeStart && i.timeEnd) {
+              const [sh, sm] = i.timeStart.split(':').map(Number);
+              let [eh, em] = i.timeEnd.split(':').map(Number);
+              let dur = (eh*60+em) - (sh*60+sm);
+              if (dur <= 0) dur += 24*60;
+              totalMin += dur;
+            }
+          });
+        }
+      }
+
+      const badgeEl = document.getElementById(`badges-${dateStr}`);
+      if (badgeEl) badgeEl.innerHTML = badges.join('') || '<span style="color:var(--text-muted);font-size:0.7rem">空</span>';
+
+      const timeEl = document.getElementById(`time-${dateStr}`);
+      if (timeEl && totalMin > 0) {
+        timeEl.textContent = `${(totalMin/60).toFixed(1)}h`;
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  // ── Expand detail ──
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const dateStr = btn.dataset.date;
+    const uid = btn.dataset.uid || '';
+
+    if (action === 'expand') {
+      const detailId = uid ? `detail-${dateStr}-${uid}` : `detail-${dateStr}`;
+      const contentId = uid ? `detail-content-${dateStr}-${uid}` : `detail-content-${dateStr}`;
+      const detailRow = document.getElementById(detailId);
+      const parentRow = btn.closest('.date-row');
+      if (detailRow.classList.contains('open')) {
+        detailRow.classList.remove('open');
+        parentRow?.classList.remove('expanded');
+        btn.textContent = '展开';
+      } else {
+        const detailContent = document.getElementById(contentId);
+        if (detailContent && detailContent.textContent === '加载中...') {
+          try {
+            let data;
+            if (uid && authRole === 'admin') {
+              const res = await fetchJSON(`/api/reflections/all?user_id=${uid}`);
+              const match = res.find(r => r.date === dateStr);
+              data = match ? match.data : {};
+            } else {
+              const res = await fetchJSON(`/api/reflections?date=${dateStr}`);
+              data = res.data || {};
+            }
+            detailContent.innerHTML = renderDetail(data);
+          } catch (e) {
+            detailContent.innerHTML = '<span style="color:var(--accent-rose)">加载失败</span>';
+          }
+        }
+        detailRow.classList.add('open');
+        parentRow?.classList.add('expanded');
+        btn.textContent = '收起';
+      }
+    } else if (action === 'delete') {
+      deleteTarget = dateStr;
+      const date = new Date(dateStr + 'T00:00:00');
+      document.getElementById('deleteDateLabel').textContent =
+        `${date.getFullYear()}年${date.getMonth()+1}月${date.getDate()}日`;
+      document.getElementById('deleteModal').classList.add('open');
+    }
+  });
+
+  function renderDetail(data) {
+    return Object.entries(data)
+      .filter(([_, items]) => Array.isArray(items) && items.length > 0)
+      .map(([sectionId, items]) => `
+        <div class="detail-section">
+          <div class="detail-section-title">${sectionNames[sectionId] || sectionId}</div>
+          ${items.map((item, i) => `
+            <div class="detail-item">
+              <span class="detail-item-num">${i+1}.</span>
+              ${item.timeStart ? `<span class="detail-item-time">${item.timeStart}${item.timeEnd ? ' - '+item.timeEnd : ''}</span>` : '<span class="detail-item-time"></span>'}
+              <span class="detail-item-text">${item.text || '(空)'}</span>
+            </div>
+          `).join('')}
+        </div>
+      `).join('') || '<span style="color:var(--text-muted)">无记录</span>';
+  }
+
+  // ── Delete ──
+  document.getElementById('deleteCancel').addEventListener('click', () => {
+    document.getElementById('deleteModal').classList.remove('open');
+    deleteTarget = null;
+  });
+  document.getElementById('deleteConfirm').addEventListener('click', async () => {
+    if (!deleteTarget) return;
+    try {
+      await fetchJSON(`/api/reflections?date=${deleteTarget}`, { method: 'DELETE' });
+      document.getElementById('deleteModal').classList.remove('open');
+      showToast('已删除');
+      loadAll();
+    } catch (e) {
+      showToast('删除失败');
+    }
+    deleteTarget = null;
+  });
+  document.getElementById('deleteModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('deleteModal')) {
+      document.getElementById('deleteModal').classList.remove('open');
+      deleteTarget = null;
+    }
+  });
+
+  // ── Search ──
+  document.getElementById('searchInput').addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+      currentSearch = e.target.value.trim();
+      if (!currentSearch) { loadAll(); return; }
+      await doSearch(currentSearch);
+    }
+  });
+
+  async function doSearch(q) {
+    try {
+      const results = await fetchJSON(`/api/search?q=${encodeURIComponent(q)}`);
+      document.getElementById('searchInfo').textContent =
+        `找到 ${results.length} 天匹配「${q}」`;
+
+      const tbody = document.getElementById('dateTableBody');
+      if (results.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text-muted)">无匹配结果</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = results.map(r => {
+        const date = new Date(r.date + 'T00:00:00');
+        const wd = weekdays[date.getDay()];
+        return `
+          <tr class="date-row" data-date="${r.date}">
+            <td>
+              <span class="date-link">${date.getFullYear()}年${date.getMonth()+1}月${date.getDate()}日</span>
+              <span class="date-weekday">周${wd}</span>
+            </td>
+            <td colspan="2">
+              ${r.matches.map(m => `
+                <div style="margin:2px 0;font-size:0.78rem">
+                  <span class="section-badge">${sectionNames[m.section]||m.section}</span>
+                  <span style="color:var(--text-secondary)">${highlightMatch(m.text, q)}</span>
+                </div>
+              `).join('')}
+            </td>
+            <td>
+              <button class="btn small" data-action="expand" data-date="${r.date}">展开</button>
+            </td>
+          </tr>
+          <tr class="detail-row" id="detail-${r.date}">
+            <td colspan="4" class="detail-cell">
+              <div id="detail-content-${r.date}">
+                ${renderDetail(r.matches.reduce((acc, m) => {
+                  if (!acc[m.section]) acc[m.section] = [];
+                  acc[m.section].push({timeStart: m.timeStart, timeEnd: m.timeEnd, text: m.text});
+                  return acc;
+                }, {}))}
+              </div>
+            </td>
+          </tr>`;
+      }).join('');
+    } catch (e) {
+      showToast('搜索失败');
+    }
+  }
+
+  function highlightMatch(text, q) {
+    const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return text.replace(new RegExp(`(${escaped})`, 'gi'),
+      '<mark style="background:rgba(200,135,58,0.3);color:var(--accent-gold);border-radius:2px;padding:0 2px">$1</mark>');
+  }
+
+  // ── Refresh ──
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    currentSearch = '';
+    document.getElementById('searchInput').value = '';
+    document.getElementById('searchInfo').textContent = '';
+    loadAll();
+  });
+
+  // ── Init ──
+  async function init() {
+    if (authToken) {
+      try {
+        const res = await apiFetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          authRole = data.role || 'user';
+          localStorage.setItem('reflection_auth_role', authRole);
+          hideAuthOverlay();
+          loadAll();
+          return;
+        }
+      } catch(e) {}
+      clearAuth();
+    }
+    showAuthOverlay();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
